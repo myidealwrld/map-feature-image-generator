@@ -1,49 +1,103 @@
 # Map Feature Image Generator
 
-This requested extraction is blocked. The inspected production sources render interactive maps for app and website views, but they do not contain a standalone map-to-image generator or a working map screenshot export pipeline.
-
-## Why it exists
-
-The intended goal was to extract a reusable map image generator from an existing working implementation. The source review found no such implementation, so this folder records the boundary rather than inventing a replacement.
+Generate static map images for app cards, featured images, articles, or social previews from slippy-map tiles, markers, and optional routes.
 
 ## Features
 
-- Source audit and exact blocker are documented.
-- No image-generation feature is claimed.
+- PNG, JPEG, and WebP output
+- OpenGraph, 16:9, 4:3, square, and portrait presets
+- Custom width/height
+- Center + zoom controls
+- Repeatable labeled markers
+- GeoJSON LineString route overlays
+- Configurable tile URL, attribution, and User-Agent
+- Optional on-disk tile cache
+- OpenStreetMap tiles by default
+- No API key required for the default tile source
 
-## Source reviewed
+## Installation
 
-- The app's native map component delegates to `react-native-maps`.
-- The web map component embeds a map provider.
-- Website map code uses Leaflet and live map tiles with project-specific listing data.
-- The app share-image helper captures a different UI card, not a map feature image.
+Python 3.10+:
 
-These are not sufficient evidence for a reusable image-generation tool. Building a new renderer, screenshot pipeline, or tile downloader here would invent functionality and could introduce provider/licensing or data issues.
+```sh
+git clone https://github.com/myidealwrld/map-feature-image-generator.git
+cd map-feature-image-generator
+python3 -m pip install .
+```
 
-## Status
+## Quick start
 
-See `BLOCKED.md`. No generator, examples, or generated images are included, and this project is not ready to publish.
+```sh
+map-feature-image \
+  --center 13.91,-60.98 \
+  --zoom 12 \
+  --preset og \
+  --marker '13.91,-60.98,Example' \
+  --output featured-map.png
+```
 
-## Installation and quick start
+Add a route:
 
-There is no executable package to install or run. Do not treat this folder as a generator until a production source implementation with image output is identified and tested.
+```sh
+map-feature-image \
+  --center 13.91,-60.98 \
+  --zoom 12 \
+  --preset 16:9 \
+  --route-geojson examples/route.geojson \
+  --marker '13.91,-60.98,Start' \
+  --output route.webp
+```
 
-## Configuration and expected output
+## Presets
 
-No configuration or image output exists in this blocked copy.
+- `og`: 1200×630
+- `16:9`: 1280×720
+- `4:3`: 1200×900
+- `square`: 1080×1080
+- `portrait`: 1080×1350
 
-## Architecture
+Use `--width` and `--height` to override a preset.
 
-The inspected source paths were interactive map views and a separate share-card capture helper. Neither is a map image exporter.
+## Tile providers
 
-## Development and testing
+The default source is the OpenStreetMap standard tile server and attribution is rendered into the image automatically. Keep usage modest, retain attribution, identify your client with a real User-Agent, and follow the provider's tile usage policy. For production/high-volume rendering, use a tile provider that explicitly supports your volume and set:
 
-No executable tests can be run for this blocked extraction. A future implementation must render at least three generic example images and verify file format and dimensions.
+```sh
+--tile-url 'https://your-provider/{z}/{x}/{y}.png'
+--attribution 'Your attribution'
+--user-agent 'your-app/1.0'
+```
+
+Use `--cache-dir .tile-cache` to avoid repeatedly downloading the same tiles.
+
+## Python API
+
+```python
+from map_feature_image_generator import Marker, render_map, save_image
+
+image = render_map(
+    center=(13.91, -60.98),
+    zoom=12,
+    width=1200,
+    height=630,
+    markers=[Marker(13.91, -60.98, "Example")],
+)
+save_image(image, "map.png")
+```
+
+## Development
+
+```sh
+python3 -m pip install -e .
+python3 -m unittest discover -s tests -v
+```
+
+The test suite renders images with synthetic in-memory tiles, so CI does not depend on a live map provider.
 
 ## Security
 
-Do not add API keys, private coordinates, production listings, or downloaded map tiles. Any future map provider must be used under its documented terms.
+Do not hard-code private coordinates, API keys, or provider secrets in examples. If your tile provider uses a secret token, inject it through your own runtime configuration and keep it out of Git history.
 
-## Licence
+## License
 
 Apache-2.0. See `LICENSE`.
